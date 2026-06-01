@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#fcfaf8">
+    <title>阿臻專屬戰情室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @font-face {
+            font-family: 'Iansui';
+            src: url('https://cdn.jsdelivr.net/gh/buttaiwan/iansui@master/Iansui-Regular.ttf') format('truetype');
+            font-weight: normal; font-style: normal;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fcfaf8 0%, #f3ead7 100%);
+            color: #5c4c43;
+            font-family: 'Iansui', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh; margin: 0; padding: 20px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 15px rgba(140, 107, 93, 0.05);
+            border-radius: 20px;
+        }
+
+        .action-btn {
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 2px solid #e6d5c3;
+            border-radius: 16px; padding: 14px 8px;
+            font-size: 16px; font-weight: bold; color: #8c6b5d;
+            box-shadow: 0 2px 8px rgba(140, 107, 93, 0.06);
+            transition: all 0.2s ease; cursor: pointer;
+            font-family: 'Iansui', sans-serif;
+        }
+
+        .action-btn:active { transform: scale(0.95); background-color: #e6d5c3; color: #fff; }
+        
+        .modal-enter { opacity: 0; transform: scale(0.9) translateY(10px); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-active { opacity: 1; transform: scale(1) translateY(0); }
+
+        input, select, button, textarea { font-family: 'Iansui', sans-serif; appearance: none; }
+        
+        input[type="time"], select {
+            display: block; width: 100%; min-height: 54px; box-sizing: border-box;
+            -webkit-appearance: none; appearance: none; margin: 0; outline: none;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238c6b5d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; padding-right: 2.5rem;
+        }
+
+        .loading-overlay {
+            position: fixed; inset: 0; background: rgba(252, 250, 248, 0.98);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
+        }
+    </style>
+</head>
+<body class="max-w-md mx-auto relative pb-10">
+
+    <div id="loading" class="loading-overlay">
+        <div class="text-center">
+            <div class="inline-block animate-bounce text-4xl mb-4">🛡️</div>
+            <p class="text-[#8c6b5d] font-bold text-lg">啟動雙引擎連線中...</p>
+        </div>
+    </div>
+
+    <!-- 標題與狀態 -->
+    <div class="relative mb-6 mt-2 text-center">
+        <h1 class="text-2xl font-bold text-[#8c6b5d] tracking-wide flex items-center justify-center gap-2">🛡️ 阿臻專屬戰情室</h1>
+        <div id="statusBadge" class="inline-block text-[10px] bg-[#e6d5c3] text-[#8c6b5d] px-3 py-1 rounded-full font-bold mt-1">📡 連線偵測中...</div>
+    </div>
+
+    <!-- 按鈕區 -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+        <button class="action-btn" onclick="window.addLog('🌊 尿+1')">🌊 尿+1</button>
+        <button class="action-btn" onclick="window.addLog('💩 便+1')">💩 便+1</button>
+        <button class="action-btn col-span-2 bg-[#fdfbf8] border-[#dcc9bc]" onclick="window.showSupplementModal()">🚪 出門前：🍋🫒檸檬橄欖水 + 💊營養品</button>
+        <button class="action-btn bg-[#fdfbf8] border-[#dcc9bc]" onclick="window.showMorningModal()">🌅 早晨空腹飲品</button>
+        <button class="action-btn" onclick="window.showWaterModal()">💧 喝水加壓</button>
+        <button class="action-btn" onclick="window.showPreShield()">🛡️ 餐前護盾</button>
+        <button class="action-btn" onclick="window.showPostShield()">🛡️ 餐後護盾</button>
+        <button class="action-btn" onclick="window.showKombuchaModal()">🍋 康普茶完食</button>
+        <button class="action-btn" onclick="window.showAfternoonTeaModal()">🧋 下午茶飲品</button>
+        <button class="action-btn" onclick="window.showBedtimeModal()">💤 睡前防護</button>
+        <button class="action-btn bg-[#fdfbf8] border-[#dcc9bc]" onclick="window.showUltimateModal()">🛡️ 終極防護</button>
+    </div>
+
+    <!-- 戰報看板 -->
+    <div class="glass-card p-5 mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-y-3 mb-4">
+            <h2 class="text-lg font-bold text-[#8c6b5d] whitespace-nowrap shrink-0">📝 今日戰報</h2>
+            <div class="flex gap-2">
+                <button onclick="window.showWeightModal()" class="text-xs text-[#8c6b5d] bg-white/80 px-2 py-1.5 rounded-xl shadow-sm font-bold whitespace-nowrap">⚖️ 體重</button>
+                <button onclick="window.showManualEntry()" class="text-xs text-[#8c6b5d] bg-white/80 px-2 py-1.5 rounded-xl shadow-sm font-bold whitespace-nowrap">➕ 補登</button>
+                <button onclick="window.undoLastLog()" class="text-xs text-[#b59887] bg-white/80 px-2 py-1.5 rounded-xl shadow-sm font-bold whitespace-nowrap">↩️ 撤銷</button>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-4">
+            <div class="bg-white/60 py-3 rounded-2xl text-center border border-white/50 shadow-sm"><p class="text-[10px] text-[#8c6b5d] mb-1">🌊 尿尿</p><p class="text-xl font-bold text-[#ab8b7d]" id="pCount">0</p></div>
+            <div class="bg-white/60 py-3 rounded-2xl text-center border border-white/50 shadow-sm"><p class="text-[10px] text-[#8c6b5d] mb-1">💩 便便</p><p class="text-xl font-bold text-[#ab8b7d]" id="sCount">0</p></div>
+            <div class="bg-white/60 py-3 rounded-2xl text-center border border-white/50 shadow-sm"><p class="text-[10px] text-[#8c6b5d] mb-1">💧 水量</p><p class="text-xl font-bold text-[#ab8b7d]"><span id="wCount">0</span><span class="text-[10px] font-normal ml-0.5">ml</span></p></div>
+        </div>
+        <hr class="border-t-2 border-[#e6d5c3] border-dashed mb-3 opacity-40">
+        
+        <!-- 動態生成的戰報清單區 -->
+        <ul id="mainLogList" class="max-h-60 overflow-y-auto space-y-2 pr-1"></ul>
+    </div>
+
+    <!-- 底部操作區 -->
+    <div class="grid grid-cols-2 gap-3">
+        <button onclick="window.copyNewLogs()" class="col-span-2 bg-[#bda493] text-white rounded-2xl py-4 font-bold text-lg shadow-md mb-1 active:scale-95 transition">📋 一鍵複製【待傳】戰報</button>
+        <button onclick="window.copyAllLogs()" class="bg-white/60 text-[#8c6b5d] border-2 border-[#e6d5c3] rounded-2xl py-3 font-bold text-sm active:scale-95 transition">📋 複製全部 (備用)</button>
+        <button onclick="window.showClearConfirm()" class="bg-white/40 text-[#8c6b5d] border-2 border-[#e6d5c3] rounded-2xl py-3 font-bold text-sm active:scale-95 transition">🗑️ 清空重置 (換日)</button>
+    </div>
+
+    <!-- ================== 彈窗區 ================== -->
+    <div id="weightBox" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex-col justify-center items-center p-4">
+        <div class="bg-[#fdfbf8] p-6 rounded-3xl shadow-2xl max-w-sm w-full border-2 border-[#e6d5c3] modal-enter" id="weightContent">
+            <h3 class="text-xl font-bold text-[#8c6b5d] mb-4 text-center">⚖️ 紀錄體重</h3>
+            <div class="mb-4">
+                <input type="number" step="0.1" id="weightInput" placeholder="請輸入體重 (例: 50.5)" class="w-full px-4 py-3 rounded-2xl border-2 border-[#e6d5c3] font-bold text-center bg-white text-lg text-[#8c6b5d] outline-none">
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="window.closeAll()" class="flex-1 py-3 text-[#8c6b5d] font-bold">取消</button>
+                <button onclick="window.submitWeight()" class="flex-1 bg-[#bda493] text-white py-3 rounded-2xl font-bold shadow-lg">確定紀錄</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="manualBox" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex-col justify-center items-center p-4">
+        <div class="bg-[#fdfbf8] p-6 rounded-3xl shadow-2xl max-w-sm w-full border-2 border-[#e6d5c3] modal-enter" id="manualContent">
+            <h3 class="text-xl font-bold text-[#8c6b5d] mb-4 text-center">🕒 補登紀錄</h3>
+            <div class="space-y-4 text-left w-full">
+                <div class="w-full"><label class="text-xs text-[#8c6b5d] font-bold block mb-1">時間</label><input type="time" id="mTime" class="w-full px-4 py-3 rounded-2xl border-2 border-[#e6d5c3] font-bold text-center bg-white text-lg text-[#8c6b5d]"></div>
+                <div class="w-full"><label class="text-xs text-[#8c6b5d] font-bold block mb-1">主項目</label><select id="mMain" onchange="window.handleMChange()" class="w-full px-4 py-3 rounded-2xl border-2 border-[#e6d5c3] font-bold bg-white text-[15px] text-[#8c6b5d]"><option value="🌊 尿+1">🌊 尿+1</option><option value="💩 便+1">💩 便+1</option><option value="g_supp">🚪 出門前準備...</option><option value="g_morning">🌅 早晨空腹飲品...</option><option value="g_water">💧 喝水加壓...</option><option value="g_pre">🛡️ 餐前護盾...</option><option value="g_post">🛡️ 餐後護盾...</option><option value="g_kb">🍋 康普茶完食...</option><option value="g_tea">🧋 下午茶飲品...</option><option value="g_bed">💤 睡前防護...</option><option value="g_ult">🛡️ 終極防護...</option></select></div>
+                <div id="mSubArea" class="hidden w-full"><label class="text-xs text-[#8c6b5d] font-bold block mb-1">細項選擇</label><select id="mSub" class="w-full px-4 py-3 rounded-2xl border-2 border-[#e6d5c3] font-bold bg-white text-[15px] text-[#8c6b5d]"></select></div>
+            </div>
+            <div class="flex gap-3 mt-6"><button onclick="window.closeAll()" class="flex-1 py-3 text-[#8c6b5d] font-bold">取消</button><button onclick="window.submitManual()" class="flex-1 bg-[#bda493] text-white py-3 rounded-2xl font-bold shadow-lg">確定補登</button></div>
+        </div>
+    </div>
+
+    <div id="dropdownModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex-col justify-center items-center p-4">
+        <div class="bg-[#fdfbf8] p-6 rounded-3xl shadow-2xl max-w-sm w-full border-2 border-[#e6d5c3] modal-enter">
+            <h3 id="dTitle" class="text-xl font-bold text-[#8c6b5d] mb-4 text-center">選擇項目</h3>
+            <div class="mb-6"><select id="dSelect" class="w-full px-4 py-4 rounded-2xl border-2 border-[#e6d5c3] font-bold bg-white text-[15px] text-[#8c6b5d]"></select></div>
+            <div class="flex gap-3"><button onclick="window.closeAll()" class="flex-1 py-3 text-[#8c6b5d] font-bold">取消</button><button id="dConfirmBtn" class="flex-1 bg-[#bda493] text-white py-3 rounded-2xl font-bold shadow-lg">確定紀錄</button></div>
+        </div>
+    </div>
+
+    <div id="simpleModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex-col justify-center items-center p-4">
+        <div class="bg-[#fdfbf8] p-6 rounded-3xl shadow-2xl max-w-sm w-full border-2 border-[#e6d5c3] modal-enter">
+            <h3 id="sTitle" class="text-xl font-bold text-[#8c6b5d] mb-4 text-center">請選擇</h3>
+            <div id="sBtns" class="grid grid-cols-1 gap-3"></div><button onclick="window.closeAll()" class="w-full mt-4 py-2 opacity-60 text-[#8c6b5d] font-bold">取消</button>
+        </div>
+    </div>
+
+    <div id="msgBox" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex-col justify-center items-center p-4">
+        <div class="bg-[#fdfbf8] p-7 rounded-3xl shadow-2xl max-w-sm w-full text-center border-2 border-[#e6d5c3] modal-enter">
+            <div id="msgIcon" class="text-5xl mb-4">✨</div><h3 id="msgTitle" class="text-2xl font-bold text-[#8c6b5d] mb-2">提示</h3><p id="msgText" class="text-[#8c6b5d] mb-6 text-lg whitespace-pre-line"></p><div id="msgBtns" class="flex gap-4 justify-center"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, inMemoryPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ↓↓↓ 把你在 Firebase 註冊 Web App 後拿到的設定，整段貼到這裡 ↓↓↓
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSerbZNjEyPUjEag-SC90DXvsfePo6c8s",
+            authDomain: "azhen-warroom.firebaseapp.com",
+            projectId: "azhen-warroom",
+            storageBucket: "azhen-warroom.firebasestorage.app",
+            messagingSenderId: "862558492229",
+            appId: "1:862558492229:web:1c8f8885b80e702a42b52c"
+        };
+        // ↑↑↑ 以上六行務必換成你自己的，否則連不上 ↑↑↑
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'azhen-warroom'; // 資料存放路徑用的固定代號，可自訂但改了會看不到舊資料
+
+        let logData = [];
+        let isCloudReady = false;
+        let useLocalFallback = false; 
+
+        window.renderUI = () => {
+            const list = document.getElementById('mainLogList');
+            let p=0, s=0, w=0;
+            logData.forEach(l => {
+                if(l.text.includes('尿+1')) p++;
+                if(l.text.includes('便+1')) s++;
+                if(!l.text.includes('水壺')) { const m = l.text.match(/(\d+)ml/i); if(m) w += parseInt(m[1]); }
+            });
+            document.getElementById('pCount').innerText = p; document.getElementById('sCount').innerText = s; document.getElementById('wCount').innerText = w;
+            
+            list.innerHTML = logData.length ? '' : '<li class="text-center py-8 opacity-40">今日尚無戰報</li>';
+            [...logData].reverse().forEach(l => {
+                const li = document.createElement('li');
+                const isPending = l.reported === false || l.reported === undefined;
+                if(isPending) {
+                    li.className = "bg-white p-3 rounded-2xl font-bold text-[#8c6b5d] shadow-md border-2 border-[#bda493] relative text-left";
+                    li.innerHTML = `${l.text} <span class="absolute right-3 top-3 text-[10px] bg-red-400 text-white px-2 py-0.5 rounded-full shadow-sm">待傳</span>`;
+                } else {
+                    li.className = "bg-white/50 p-3 rounded-2xl font-medium text-[#a38c82] border border-white/50 relative opacity-80 text-left";
+                    li.innerHTML = l.text;
+                }
+                list.appendChild(li);
+            });
+        };
+
+        window.closeAll = () => { document.querySelectorAll('[id$="Box"], [id$="Modal"]').forEach(el => { el.querySelector('.modal-enter')?.classList.remove('modal-active'); setTimeout(() => { el.classList.add('hidden'); el.classList.remove('flex'); }, 200); }); };
+        const open = (id) => { const el = document.getElementById(id); el.classList.remove('hidden'); el.classList.add('flex'); setTimeout(() => el.querySelector('.modal-enter').classList.add('modal-active'), 10); };
+
+        window.addLog = async (txt, customTime = null) => {
+            const t = customTime || new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            if (useLocalFallback) {
+                logData.push({ id: Date.now().toString(), text: `${t} - ${txt}`, reported: false, createdAt: Date.now() });
+                logData.sort((a, b) => a.text.substring(0, 5).localeCompare(b.text.substring(0, 5)));
+                localStorage.setItem('azhenLogs_fallback', JSON.stringify(logData)); window.renderUI(); window.closeAll(); return;
+            }
+            try {
+                if(!isCloudReady || !auth.currentUser) { window.showMsg('⏳', '雲端連線中', '請稍等兩秒鐘，或重新整理網頁！', false); return; }
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), { text: `${t} - ${txt}`, reported: false, createdAt: serverTimestamp() });
+                window.closeAll();
+            } catch (error) { window.showMsg('❌', '發生錯誤', '戰報傳送失敗！原因：' + error.message, false); }
+        };
+
+        window.showWeightModal = () => { document.getElementById('weightInput').value = ''; open('weightBox'); };
+        window.submitWeight = () => { const w = document.getElementById('weightInput').value; if(!w) { window.showMsg('⚠️', '提醒', '請輸入體重數值！', false); return; } window.addLog(`⚖️ 體重紀錄：${w} kg`); };
+
+        window.showMorningModal = () => {
+            document.getElementById('sTitle').innerText = '🌅 早晨空腹飲品';
+            document.getElementById('sBtns').innerHTML = `<button onclick="window.addLog('🌅 🍋☕ 檸檬黑咖啡 (340ml)')" class="bg-[#fff9ce] border-2 border-[#f0e6aa] py-4 rounded-2xl font-bold text-[#8c7b5d]">❶ 🍋☕ 檸檬黑咖啡</button><button onclick="window.addLog('🌅 🌹🫖 玫瑰暖宮茶 (340ml)')" class="bg-[#ffe8ee] border-2 border-[#f0d1d9] py-4 rounded-2xl font-bold text-[#8c6a71]">❷ 🌹🫖 玫瑰暖宮茶</button>`; open('simpleModal');
+        };
+        window.showWaterModal = () => {
+            document.getElementById('sTitle').innerText = '💧 喝水加壓';
+            document.getElementById('sBtns').innerHTML = [400, 500, 710, 890].map(v => `<button onclick="window.addLog('💧 喝水加壓 (${v}ml)')" class="bg-white border-2 border-[#e6d5c3] py-4 rounded-2xl font-bold text-[#8c6b5d]">${v}ml</button>`).join(''); open('simpleModal');
+        };
+        window.showAfternoonTeaModal = () => {
+            document.getElementById('sTitle').innerText = '🧋 下午茶飲品';
+            document.getElementById('sBtns').innerHTML = `
+                <button onclick="window.addLog('🧋 🍶 焙茶高蛋白拿鐵')" class="bg-white border-2 border-[#e6d5c3] py-4 rounded-2xl font-bold text-[#8c6b5d]">🍶 焙茶高蛋白拿鐵</button>
+                <button onclick="window.addLog('🧋 🍵 抹茶拿鐵')" class="bg-[#eaf1e8] border-2 border-[#d0e0cd] py-4 rounded-2xl font-bold text-[#6d8c6b]">🍵 抹茶拿鐵</button>
+                <button onclick="window.addLog('🧋 🫐 藍莓無糖豆漿')" class="bg-[#eaeef1] border-2 border-[#cdd4e0] py-4 rounded-2xl font-bold text-[#6b7c8c]">🫐 藍莓無糖豆漿</button>
+                <button onclick="window.addLog('🧋 🥤 無糖泰奶')" class="bg-[#fff1e6] border-2 border-[#e6d0bf] py-4 rounded-2xl font-bold text-[#b57a53]">🥤 無糖泰奶</button>
+            `; 
+            open('simpleModal');
+        };
+
+        window.showKombuchaModal = () => {
+            document.getElementById('sTitle').innerText = '🍋 康普茶 (1/2 水量)';
+            document.getElementById('sBtns').innerHTML = [300, 400, 500].map(v => `<button onclick="window.setKbS2('${v}ml')" class="bg-white border-2 border-[#e6d5c3] py-4 rounded-2xl font-bold text-[#8c6b5d]">${v}ml</button>`).join(''); open('simpleModal');
+        };
+        window.setKbS2 = (vol) => {
+            document.getElementById('sTitle').innerText = '🍋 康普茶 (2/2 水源)';
+            document.getElementById('sBtns').innerHTML = `<button onclick="window.addLog('🍋 康普茶 (${vol}/水壺)')" class="bg-white border-2 border-[#e6d5c3] py-4 rounded-2xl font-bold text-[#8c6b5d]">💧 水壺的水 (不計)</button><button onclick="window.addLog('🍋 康普茶 + 💧 水 (${vol})')" class="bg-[#bda493] text-white py-4 rounded-2xl font-bold shadow-lg">🚰 額外的水 (計入)</button>`;
+        };
+
+        const setupDropdownModal = (title, options, baseStr) => {
+            document.getElementById('dTitle').innerText = title; const selectEl = document.getElementById('dSelect');
+            selectEl.innerHTML = options.map(o => `<option value="${o.v}">${o.t}</option>`).join('');
+            document.getElementById('dConfirmBtn').onclick = () => { const val = selectEl.value; if(val === 'none') window.addLog(baseStr); else window.addLog(baseStr ? `${baseStr} [吃：${val}]` : val); }; open('dropdownModal');
+        };
+
+        window.showSupplementModal = () => setupDropdownModal('🚪 出門前準備', [{v:'none', t:'💧 僅喝水 (不配營養品)'},{v:'💊 B群', t:'配 💊 B群'},{v:'👁️ 葉黃素', t:'配 👁️ 葉黃素'},{v:'🍒 蔓越莓錠', t:'配 🍒 蔓越莓錠'},{v:'✨ 膠原蛋白錠', t:'配 ✨ 膠原蛋白錠'},{v:'💊 B群、👁️ 葉黃素', t:'配 💊 B群 + 👁️ 葉黃素'},{v:'🍒 蔓越莓、✨ 膠原蛋白', t:'配 🍒 蔓越莓 + ✨ 膠原'},{v:'💊 B群、👁️ 葉黃素、🍒 蔓越莓錠、✨ 膠原蛋白錠', t:'🛡️ 💊👁️🍒✨ 全吃 (四種皆有)'}], '🚪 🍋🫒 檸檬橄欖水 (400ml)');
+        window.showPreShield = () => setupDropdownModal('🛡️ 餐前護盾', [{v:'💚 綠棒', t:'💚 綠棒'}, {v:'🩷 粉錠', t:'🩷 粉錠'}, {v:'💚 綠棒、🩷 粉錠', t:'🛡️ 💚 綠棒 + 🩷 粉錠 (全吃)'}], '🛡️ 餐前護盾');
+        window.showPostShield = () => setupDropdownModal('🛡️ 餐後護盾', [{v:'🩵 藍棒', t:'🩵 藍棒'}, {v:'🤎 粉褐棒', t:'🤎 粉褐棒'}, {v:'🩵 藍棒、🤎 粉褐棒', t:'🛡️ 🩵 藍棒 + 🤎 粉褐棒 (全吃)'}], '🛡️ 餐後護盾');
+        window.showBedtimeModal = () => setupDropdownModal('💤 睡前防護', [{v:'💛 黃包', t:'💛 黃包'}, {v:'🤍 美白粉', t:'🤍 美白粉'}, {v:'💛 黃包、🤍 美白粉', t:'💤 💛 黃包 + 🤍 美白粉 (全吃)'}], '💤 睡前防護');
+        window.showUltimateModal = () => setupDropdownModal('🛡️ 終極防護', [{v:'🔴 紅包', t:'🔴 紅包'}, {v:'🟣 紫瓶', t:'🟣 紫瓶'}, {v:'🔴 紅包、🟣 紫瓶', t:'🛡️ 🔴 紅包 + 🟣 紫瓶 (全吃)'}], '🛡️ 終極防護');
+
+        const sOpts = {
+            'g_supp': [{v:'🚪 🍋🫒 檸檬橄欖水 (400ml)', t:'💧 僅喝水 (不配營養品)'},{v:'🚪 🍋🫒 檸檬橄欖水 (400ml) [配：💊 B群]', t:'配 💊 B群'},{v:'🚪 🍋🫒 檸檬橄欖水 (400ml) [配：👁️ 葉黃素]', t:'配 👁️ 葉黃素'},{v:'🚪 🍋🫒 檸檬橄欖水 (400ml) [配：🍒 蔓越莓錠]', t:'配 🍒 蔓越莓錠'},{v:'🚪 🍋🫒 檸檬橄欖水 (400ml) [配：✨ 膠原蛋白錠]', t:'配 ✨ 膠原蛋白錠'},{v:'🚪 🍋🫒 檸檬橄欖水 (400ml) [配：💊 B群、👁️ 葉黃素]', t:'配 💊 B群 + 👁️ 葉黃素'},{v:'🚪 🍋🫒 檸檬橄欖水 (400ml) [配：🍒 蔓越莓、✨ 膠原蛋白]', t:'配 🍒 蔓越莓 + ✨ 膠原'},{v:'🚪 🍋🫒 檸檬橄欖水 (400ml) [配：💊 B群、👁️ 葉黃素、🍒 蔓越莓錠、✨ 膠原蛋白錠]', t:'🛡️ 💊👁️🍒✨ 全吃 (四種皆有)'}],
+            'g_morning': [{v:'🌅 🍋☕ 檸檬黑咖啡 (340ml)',t:'🍋☕ 檸檬黑咖啡'},{v:'🌅 🌹🫖 玫瑰暖宮茶 (340ml)',t:'🌹🫖 玫瑰暖宮茶'}],
+            'g_water': [{v:'💧 喝水加壓 (400ml)',t:'💧 400ml'},{v:'💧 喝水加壓 (500ml)',t:'💧 500ml'},{v:'💧 喝水加壓 (710ml)',t:'💧 710ml'},{v:'💧 喝水加壓 (890ml)',t:'💧 890ml'}],
+            'g_pre': [{v:'🛡️ 餐前護盾 [吃：綠棒]',t:'💚 綠棒'},{v:'🛡️ 餐前護盾 [吃：粉錠]',t:'🩷 粉錠'},{v:'🛡️ 餐前護盾 [吃：綠棒、粉錠]',t:'🛡️ 💚 綠棒 + 🩷 粉錠'}],
+            'g_post': [{v:'🛡️ 餐後護盾 [吃：藍棒]',t:'🩵 藍棒'},{v:'🛡️ 餐後護盾 [吃：粉褐棒]',t:'🤎 粉褐棒'},{v:'🛡️ 餐後護盾 [吃：藍棒、粉褐棒]',t:'🛡️ 🩵 藍棒 + 🤎 粉褐棒'}],
+            'g_kb': [{v:'🍋 康普茶 (300ml/水壺)',t:'💧 300ml (水壺)'},{v:'🍋 康普茶 + 水 (300ml)',t:'🚰 300ml (額外)'},{v:'🍋 康普茶 (400ml/水壺)',t:'💧 400ml (水壺)'},{v:'🍋 康普茶 + 水 (400ml)',t:'🚰 400ml (額外)'},{v:'🍋 康普茶 (500ml/水壺)',t:'💧 500ml (水壺)'},{v:'🍋 康普茶 + 水 (500ml)',t:'🚰 500ml (額外)'}],
+            'g_tea': [{v:'🧋 🍶 焙茶高蛋白拿鐵',t:'🍶 焙茶拿鐵'},{v:'🧋 🍵 抹茶拿鐵',t:'🍵 抹茶拿鐵'},{v:'🧋 🫐 藍莓無糖豆漿',t:'🫐 藍莓豆漿'},{v:'🧋 🥤 無糖泰奶',t:'🥤 無糖泰奶'}],
+            'g_bed': [{v:'💤 睡前防護 [吃：黃包]',t:'💛 黃包'},{v:'💤 睡前防護 [吃：美白粉]',t:'🤍 美白粉'},{v:'💤 睡前防護 [吃：黃包、美白粉]',t:'💤 💛 黃包 + 🤍 美白粉'}],
+            'g_ult': [{v:'🛡️ 終極防護 [吃：紅包]',t:'🔴 紅包'},{v:'🛡️ 終極防護 [吃：紫瓶]',t:'🟣 紫瓶'},{v:'🛡️ 終極防護 [吃：紅包、紫瓶]',t:'🛡️ 🔴 紅包 + 🟣 紫瓶'}]
+        };
+
+        window.handleMChange = () => { const v = document.getElementById('mMain').value; const area = document.getElementById('mSubArea'); const sub = document.getElementById('mSub'); area.classList.add('hidden'); if (sOpts[v]) { sub.innerHTML = sOpts[v].map(o => `<option value="${o.v}">${o.t}</option>`).join(''); area.classList.remove('hidden'); } };
+        window.showManualEntry = () => { const n = new Date(); document.getElementById('mTime').value = n.getHours().toString().padStart(2,'0') + ':' + n.getMinutes().toString().padStart(2,'0'); document.getElementById('mMain').selectedIndex = 0; window.handleMChange(); open('manualBox'); };
+        window.submitManual = () => { const t = document.getElementById('mTime').value; const m = document.getElementById('mMain').value; if(!t) { window.showMsg('⚠️', '請注意', '補登必須填寫時間！', false); return; } const act = sOpts[m] ? document.getElementById('mSub').value : m; window.addLog(act, t); };
+
+        const fallbackCopy = (txt, cb) => { const area = document.createElement("textarea"); area.value = txt; document.body.appendChild(area); area.select(); try { document.execCommand('copy'); if(cb) cb(); else window.showMsg('✨', '複製成功', '已貼入剪貼簿，快去給教官吧！', false); } catch(e) { window.showMsg('❌', '複製失敗', '抱歉，請手動框選複製！', false); } document.body.removeChild(area); };
+        window.copyNewLogs = async () => {
+            const newLogs = logData.filter(l => !l.reported); 
+            if(!newLogs.length) { window.showMsg('🤷‍♀️', '沒有新戰報', '目前的戰報都已經傳給教官囉！\n如果需要重傳，可以點擊「複製全部」。', false); return; }
+            const txt = "教官，這是我剛剛的新增戰報：\n" + newLogs.map(l => l.text).join("\n");
+            const performBatchUpdate = async () => {
+                if (useLocalFallback) { newLogs.forEach(l => l.reported = true); localStorage.setItem('azhenLogs_fallback', JSON.stringify(logData)); window.renderUI(); window.showMsg('✨', '複製成功', `已複製 ${newLogs.length} 筆新戰報！\n(目前為本機備援模式)`, false); return; }
+                try { const batch = writeBatch(db); newLogs.forEach(l => { const ref = doc(db, 'artifacts', appId, 'public', 'data', 'logs', l.id); batch.update(ref, { reported: true }); }); await batch.commit(); window.showMsg('✨', '複製成功', `已複製 ${newLogs.length} 筆新戰報！\n這些戰報已自動轉入歷史紀錄。`, false); } catch (e) { window.showMsg('⚠️', '部分成功', '戰報已複製，但狀態更新失敗，請檢查網路。', false); }
+            };
+            if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(txt).then(performBatchUpdate).catch(() => fallbackCopy(txt, performBatchUpdate)); } else { fallbackCopy(txt, performBatchUpdate); }
+        };
+        window.copyAllLogs = () => {
+            if(!logData.length) return;
+            const txt = "教官，這是我今天的完整戰報：\n" + logData.map(l => l.text).join("\n");
+            if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(txt).then(() => window.showMsg('✨', '複製成功', '已複製「全部」戰報！', false)).catch(() => fallbackCopy(txt)); } else { fallbackCopy(txt); }
+        };
+        window.undoLastLog = async () => {
+            if(!logData.length) return;
+            const last = logData[logData.length-1];
+            window.showMsg('↩️', '確認撤銷', `確定要刪除「${last.text}」嗎？`, true, async () => { 
+                if (useLocalFallback) { logData.pop(); localStorage.setItem('azhenLogs_fallback', JSON.stringify(logData)); window.renderUI(); } else { try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'logs', last.id)); } catch (e) { window.showMsg('❌', '撤銷失敗', '請檢查網路連線', false); } }
+            });
+        };
+        window.showClearConfirm = () => {
+            window.showMsg('🗑️', '重置確認', '這會刪除所有紀錄，確定嗎？', true, async () => {
+                if (useLocalFallback) { logData = []; localStorage.setItem('azhenLogs_fallback', JSON.stringify(logData)); window.renderUI(); } else { try { const batch = writeBatch(db); logData.forEach(l => batch.delete(doc(db, 'artifacts', appId, 'public', 'data', 'logs', l.id))); await batch.commit(); } catch (e) { window.showMsg('❌', '清空失敗', '請檢查網路連線', false); } }
+            });
+        };
+
+        window.showMsg = (icon, title, text, isConfirm, onConfirm) => {
+            document.getElementById('msgIcon').innerText = icon; document.getElementById('msgTitle').innerText = title; document.getElementById('msgText').innerText = text;
+            const btns = document.getElementById('msgBtns'); btns.innerHTML = '';
+            if (isConfirm) { btns.innerHTML = `<button onclick="window.closeAll()" class="flex-1 py-3 text-[#8c6b5d] font-bold">取消</button>`; const ok = document.createElement('button'); ok.className = "flex-1 bg-[#bda493] text-white py-3 rounded-2xl font-bold shadow-lg"; ok.innerText = "確定"; ok.onclick = () => { if(onConfirm) onConfirm(); window.closeAll(); }; btns.appendChild(ok); } else { btns.innerHTML = `<button onclick="window.closeAll()" class="w-full bg-[#bda493] text-white py-3 rounded-2xl font-bold shadow-lg">知道了</button>`; }
+            open('msgBox');
+        };
+
+        function enableLocalFallback() {
+            useLocalFallback = true; document.getElementById('loading').classList.add('hidden'); document.getElementById('statusBadge').innerText = "📱 本機自動備援"; document.getElementById('statusBadge').className = "inline-block text-[10px] bg-gray-200 text-gray-700 px-3 py-1 rounded-full font-bold mt-1";
+            const localData = localStorage.getItem('azhenLogs_fallback'); logData = localData ? JSON.parse(localData) : []; window.renderUI();
+            window.showMsg('🛡️', '已啟動備援模式', '因瀏覽器安全限制，雲端連線暫時受阻！\n\n系統已切換為「📱 本機備援模式」，您的按鈕與紀錄功能皆可正常使用！', false);
+        }
+
+        async function bootCloud() {
+            try { await setPersistence(auth, inMemoryPersistence); } catch (e) { console.warn("設定 Persistence 失敗:", e); }
+            try {
+                await signInAnonymously(auth);
+            } catch (err) {
+                console.error("雲端徹底斷線:", err); enableLocalFallback(); return;
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                if (!user) return;
+                document.getElementById('loading').classList.add('hidden'); document.getElementById('statusBadge').innerText = "☁️ 雲端已同步"; document.getElementById('statusBadge').className = "inline-block text-[10px] bg-[#d0e6c3] text-[#5c8c43] px-3 py-1 rounded-full font-bold mt-1"; isCloudReady = true; useLocalFallback = false;
+                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), (snap) => { logData = snap.docs.map(d => ({ id: d.id, ...d.data() })); logData.sort((a, b) => a.text.substring(0, 5).localeCompare(b.text.substring(0, 5))); window.renderUI(); }, (error) => { console.error("資料庫被阻擋:", error); enableLocalFallback(); });
+            });
+        }
+        bootCloud();
+    </script>
+</body>
+</html>
